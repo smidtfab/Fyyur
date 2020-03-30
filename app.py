@@ -32,39 +32,66 @@ migrate = Migrate(app, db)
 
 # Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 
-shows = db.Table('shows',
-    db.Column('venue_id', db.Integer, db.ForeignKey('Venue.id'), primary_key=True),
-    db.Column('artist_id', db.Integer, db.ForeignKey('Artist.id'), primary_key=True),
-    db.Column('start_time', db.DateTime, primary_key=True)
-)
+#----------------------------------------------------------------------------#
+# Models.
+#----------------------------------------------------------------------------#
 
+# Venue model
 class Venue(db.Model):
-    __tablename__ = 'Venue'
+  __tablename__ = 'Venue'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    address = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    artists = db.relationship('Artist', secondary=shows,
-      backref=db.backref('venues', lazy=True))
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
+  id = db.Column(db.Integer, primary_key=True)
+  name = db.Column(db.String(120), nullable=False)
+  city = db.Column(db.String(120), nullable=False)
+  state = db.Column(db.String(120), nullable=False)
+  address = db.Column(db.String(120), nullable=False)
+  phone = db.Column(db.String(120), nullable=False)
+  image_link = db.Column(db.String(500))
+  facebook_link = db.Column(db.String(120))
+  genres = db.Column("genres", db.ARRAY(db.String()), nullable=False)
+  website = db.Column(db.String(500))
+  seeking_talent = db.Column(db.Boolean, default=True)
+  seeking_description = db.Column(db.String(120))
+  shows = db.relationship('Show', backref='venue', lazy=True)
 
+  def __repr__(self):
+      return f'<Venue {self.id} {self.name}>'
+
+
+# Artist model
 class Artist(db.Model):
-    __tablename__ = 'Artist'
+  __tablename__ = 'Artist'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
+  id = db.Column(db.Integer, primary_key=True)
+  name = db.Column(db.String(120), nullable=False)
+  city = db.Column(db.String(120), nullable=False)
+  state = db.Column(db.String(120), nullable=False)
+  phone = db.Column(db.String(120))
+  genres = db.Column("genres", db.ARRAY(db.String()), nullable=False)
+  image_link = db.Column(db.String(500))
+  facebook_link = db.Column(db.String(120))
+  website = db.Column(db.String(500))
+  seeking_venue = db.Column(db.Boolean, default=True)
+  seeking_description = db.Column(db.String(120))
+  shows = db.relationship('Show', backref='artist', lazy=True)
+
+  def __repr__(self):
+      return f'<Artist {self.id} {self.name}>'
+
+
+# Show model
+class Show(db.Model):
+  __tablename__ = 'Show'
+
+  id = db.Column(db.Integer, primary_key=True)
+  artist_id = db.Column(db.Integer, db.ForeignKey(
+      'Artist.id'), nullable=False)
+  venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'), nullable=False)
+  start_time = db.Column(db.DateTime, nullable=False,
+                        default=datetime.utcnow)
+
+  def __repr__(self):
+    return f'<Show {self.id}, Artist {self.artist_id}, Venue {self.venue_id}>'
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -574,16 +601,45 @@ def create_shows():
 
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
-  # called to create new shows in the db, upon submitting new show listing form
-  # TODO: insert form data as a new Show record in the db, instead
+  # called upon submitting the new show listing form
 
-  # on successful db insert, flash success
-  flash('Show was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Show could not be listed.')
-  # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
-  return render_template('pages/home.html')
+  error = False
+  body = {}
+  try:
+    # get all attributes for artist from client request
+    venue_id = request.form['venue_id']
+    artist_id = request.form['artist_id']
+    start_time = request.form['start_time']
 
+    # get artist
+    artist = Artist.query.get(artist_id)
+    #venue = Venue.query.get(venue_id)
+    #artist.venues = [venue]
+
+    statement = shows.insert().values(venue_id=venue_id, artist_id=artist_id, start_time=start_time)
+    db.session.execute(statement)
+    db.session.commit()
+    # create venue and add it to db
+    #db.session.add(artist)
+    #db.session.commit()
+
+  except:
+    error = True
+    db.session.rollback()
+    print("ERROR")
+    print(sys.exc_info())
+  finally:
+    db.session.close()
+  if error:
+    # on unsuccessful db insert, flash an error instead.
+    #flash('An error occurred. Artist ' + artist.name + ' could not be listed.')
+    #abort (400)
+    print("error when creating artist")
+  else:
+    # on successful db insert, flash success
+    #flash('Artist ' + request.form['name'] + ' was successfully listed!')
+    return render_template('pages/show_artist.html', artist=artist)
+  
 @app.errorhandler(404)
 def not_found_error(error):
     return render_template('errors/404.html'), 404
