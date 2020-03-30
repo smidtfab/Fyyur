@@ -121,31 +121,46 @@ def index():
 
 @app.route('/venues')
 def venues():
-  # TODO: replace with real venues data.
-  #       num_shows should be aggregated based on number of upcoming shows per venue.
-  
-  data=[{
-    "city": "San Francisco",
-    "state": "CA",
-    "venues": [{
-      "id": 1,
-      "name": "The Musical Hop",
-      "num_upcoming_shows": 0,
-    }, {
-      "id": 3,
-      "name": "Park Square Live Music & Coffee",
-      "num_upcoming_shows": 1,
-    }]
-  }, {
-    "city": "New York",
-    "state": "NY",
-    "venues": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
-  }]
+  # list for storing venue data
+  data = []
+
+  # get all the venues and create a set from the cities
   venues = Venue.query.all()
+  print(venues)
+  venue_cities = set()
+  for venue in venues:
+      # add city/state tuples
+      venue_cities.add((venue.city, venue.state))
+
+  # for each unique city/state, add venues
+  for location in venue_cities:
+      data.append({
+          "city": location[0],
+          "state": location[1],
+          "venues": []
+      })
+
+  # get number of upcoming shows for each venue
+  for venue in venues:
+      num_upcoming_shows = 0
+
+      shows = Show.query.filter_by(venue_id=venue.id).all()
+
+      # if the show start time is after now, add to upcoming
+      for show in shows:
+          if show.start_time > datetime.now():
+              num_upcoming_shows += 1
+
+      # for each entry, add venues to matching city/state
+      for entry in data:
+          if venue.city == entry['city'] and venue.state == entry['state']:
+              entry['venues'].append({
+                  "id": venue.id,
+                  "name": venue.name,
+                  "num_upcoming_shows": num_upcoming_shows
+              })
+
+  # return venues page with data
   return render_template('pages/venues.html', areas=data)
 
 @app.route('/venues/search', methods=['POST'])
@@ -278,33 +293,30 @@ def create_venue_submission():
     state = request.form['state']
     address = request.form['address']
     phone = request.form['phone']
-    #genres = request.form['genres']
+    genres = request.form['genres']
     facebook_link = request.form['facebook_link']
+    website = ""
+    image_link = ""
+    seeking_talent = True
+    seeking_description = ""
 
     # create venue and add it to db
-    venue = Venue(name=name, city=city, state=state, address=address, phone=phone,# genres=genres,
-      facebook_link=facebook_link)
+    venue = Venue(name=name, city=city, state=state, address=address,
+                  phone=phone, genres=genres, facebook_link=facebook_link,
+                  website=website, image_link=image_link,
+                  seeking_talent=seeking_talent,
+                  seeking_description=seeking_description)
     db.session.add(venue)
     db.session.commit()
-
-    # set up body dic to return
-    body['name'] = venue.name
-    body['city'] = venue.city
-    body['state'] = venue.state
-    body['address'] = venue.address
-    #body['genres'] = venue.genres
-    body['facebook_link'] = venue.facebook_link
   except:
     error = True
     db.session.rollback()
     print(sys.exc_info())
   finally:
     db.session.close()
-  if error:
-    print("error when creating venue")
-    #abort (400)
-  else:
-    return render_template('pages/show_venue.html', venue=venue)
+  
+  #return render_template('pages/show_venue.html', venue=venue)
+  return render_template('pages/home.html')
 
 
   # TODO: insert form data as a new Venue record in the db, instead
