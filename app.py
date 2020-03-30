@@ -96,6 +96,7 @@ def index():
 def venues():
   # TODO: replace with real venues data.
   #       num_shows should be aggregated based on number of upcoming shows per venue.
+  
   data=[{
     "city": "San Francisco",
     "state": "CA",
@@ -117,7 +118,8 @@ def venues():
       "num_upcoming_shows": 0,
     }]
   }]
-  return render_template('pages/venues.html', areas=data);
+  venues = Venue.query.all()
+  return render_template('pages/venues.html', areas=data)
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
@@ -266,16 +268,16 @@ def create_venue_submission():
     #body['genres'] = venue.genres
     body['facebook_link'] = venue.facebook_link
   except:
-      error = True
-      db.session.rollback()
-      print(sys.exc_info())
+    error = True
+    db.session.rollback()
+    print(sys.exc_info())
   finally:
-      db.session.close()
+    db.session.close()
   if error:
-      print("error when creating venue")
-      #abort (400)
+    print("error when creating venue")
+    #abort (400)
   else:
-      return render_template('pages/show_venue.html', venue=venue)
+    return render_template('pages/show_venue.html', venue=venue)
 
 
   # TODO: insert form data as a new Venue record in the db, instead
@@ -472,14 +474,48 @@ def create_artist_form():
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
   # called upon submitting the new artist listing form
-  # TODO: insert form data as a new Venue record in the db, instead
-  # TODO: modify data to be the data object returned from db insertion
 
-  # on successful db insert, flash success
-  flash('Artist ' + request.form['name'] + ' was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
-  return render_template('pages/home.html')
+  error = False
+  body = {}
+  try:
+    # get all attributes for venue from client request
+    name = request.form['name']
+    city = request.form['city']
+    state = request.form['state']
+    #address = request.form['address']
+    phone = request.form['phone']
+    genres = request.form['genres']
+    facebook_link = request.form['facebook_link']
+
+    # create venue and add it to db
+    artist = Artist(name=name, city=city, state=state, phone=phone, genres=genres,
+      facebook_link=facebook_link)
+    db.session.add(artist)
+    db.session.commit()
+
+    # set up body dic to return
+    body['name'] = artist.name
+    body['city'] = artist.city
+    body['state'] = artist.state
+    #body['address'] = artist.address
+    body['genres'] = artist.genres
+    body['facebook_link'] = artist.facebook_link
+  except:
+    error = True
+    db.session.rollback()
+    print("ERROR")
+    print(sys.exc_info())
+  finally:
+    db.session.close()
+  if error:
+    # on unsuccessful db insert, flash an error instead.
+    #flash('An error occurred. Artist ' + artist.name + ' could not be listed.')
+    #abort (400)
+    print("error when creating artist")
+  else:
+    # on successful db insert, flash success
+    #flash('Artist ' + request.form['name'] + ' was successfully listed!')
+    return render_template('pages/show_artist.html', artist=artist)
 
 
 #  Shows
