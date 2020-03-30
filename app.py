@@ -5,7 +5,7 @@
 import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import Flask, render_template, request, Response, flash, redirect, url_for, jsonify
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 import logging
@@ -13,6 +13,7 @@ from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
+import sys 
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -29,15 +30,8 @@ migrate = Migrate(app, db)
 # Models.
 #----------------------------------------------------------------------------#
 
-# TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
-"""
-"venue_id": 1,
-    "venue_name": "The Musical Hop",
-    "artist_id": 4,
-    "artist_name": "Guns N Petals",
-    "artist_image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-    "start_time": "2019-05-21T21:30:00.000Z"
-"""
+# Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
+
 shows = db.Table('shows',
     db.Column('venue_id', db.Integer, db.ForeignKey('Venue.id'), primary_key=True),
     db.Column('artist_id', db.Integer, db.ForeignKey('Artist.id'), primary_key=True),
@@ -51,7 +45,7 @@ class Venue(db.Model):
     name = db.Column(db.String)
     city = db.Column(db.String(120))
     state = db.Column(db.String(120))
-    address = db.Column(\dtdb.String(120))
+    address = db.Column(db.String(120))
     phone = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
@@ -234,6 +228,56 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
+  '''
+  id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+    city = db.Column(db.String(120))
+    state = db.Column(db.String(120))
+    address = db.Column(\dtdb.String(120))
+    phone = db.Column(db.String(120))
+    image_link = db.Column(db.String(500))
+    facebook_link = db.Column(db.String(120))
+    artists = db.relationship('Artist', secondary=shows,
+      backref=db.backref('venues', lazy=True))
+  '''
+  error = False
+  body = {}
+  try:
+    # get all attributes for venue from client request
+    name = request.form['name']
+    city = request.form['city']
+    state = request.form['state']
+    address = request.form['address']
+    phone = request.form['phone']
+    #genres = request.form['genres']
+    facebook_link = request.form['facebook_link']
+
+    # create venue and add it to db
+    venue = Venue(name=name, city=city, state=state, address=address, phone=phone,# genres=genres,
+      facebook_link=facebook_link)
+    db.session.add(venue)
+    db.session.commit()
+
+    # set up body dic to return
+    body['name'] = venue.name
+    body['city'] = venue.city
+    body['state'] = venue.state
+    body['address'] = venue.address
+    #body['genres'] = venue.genres
+    body['facebook_link'] = venue.facebook_link
+  except:
+      error = True
+      db.session.rollback()
+      print(sys.exc_info())
+  finally:
+      db.session.close()
+  if error:
+      print("error when creating venue")
+      #abort (400)
+  else:
+      return render_template('pages/show_venue.html', venue=venue)
+
+
   # TODO: insert form data as a new Venue record in the db, instead
   # TODO: modify data to be the data object returned from db insertion
 
