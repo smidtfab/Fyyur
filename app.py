@@ -194,8 +194,6 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
-  error = False
-  body = {}
   try:
     # get all attributes for venue from client request
     name = request.form['name']
@@ -220,7 +218,7 @@ def create_venue_submission():
     db.session.commit()
     flash('Venue ' + request.form['name'] + ' was successfully listed!')
   except:
-    flash('An error occurred. Venue ' + data.name + ' could not be listed.')
+    flash('An error occurred. Venue ' + request.form['name'] + ' could not be listed.')
     db.session.rollback()
     print(sys.exc_info())
   finally:
@@ -241,18 +239,6 @@ def delete_venue(venue_id):
 #  ----------------------------------------------------------------
 @app.route('/artists')
 def artists():
-  '''
-  data=[{
-    "id": 4,
-    "name": "Guns N Petals",
-  }, {
-    "id": 5,
-    "name": "Matt Quevedo",
-  }, {
-    "id": 6,
-    "name": "The Wild Sax Band",
-  }]
-  '''
   artists = Artist.query.all()
   return render_template('pages/artists.html', artists=artists)
 
@@ -346,8 +332,31 @@ def show_artist(artist_id):
     "past_shows_count": 0,
     "upcoming_shows_count": 3,
   }
-  data = list(filter(lambda d: d['id'] == artist_id, [data1, data2, data3]))[0]
-  return render_template('pages/show_artist.html', artist=data)
+  # get artist by id
+  artist = Artist.query.filter_by(id=artist_id).first()
+
+  # get all shows matching artist id
+  #shows = Show.query.filter_by(artist_id=artist_id).all()
+
+  artist_data = {
+    "id": artist.id,
+    "name": artist.name,
+    "genres": artist.genres,
+    "city": artist.city,
+    "state": artist.state,
+    "phone": artist.phone,
+    "website": artist.website,
+    "facebook_link": artist.facebook_link,
+    "seeking_venue": artist.seeking_venue,
+    "seeking_description": artist.seeking_description,
+    "image_link": artist.image_link,
+    "past_shows": [],#past_shows(),
+    "upcoming_shows": [],#upcoming_shows(),
+    "past_shows_count": 0,#len(past_shows()),
+    "upcoming_shows_count": 0,#len(upcoming_shows()),
+  }
+  
+  return render_template('pages/show_artist.html', artist=artist_data)
 
 #  Update
 #  ----------------------------------------------------------------
@@ -414,49 +423,36 @@ def create_artist_form():
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
   # called upon submitting the new artist listing form
-
-  error = False
-  body = {}
   try:
     # get all attributes for venue from client request
     name = request.form['name']
     city = request.form['city']
     state = request.form['state']
-    #address = request.form['address']
     phone = request.form['phone']
     genres = request.form['genres']
     facebook_link = request.form['facebook_link']
+    website = ""
+    image_link = ""
+    seeking_venue = False
+    seeking_description = ""
 
     # create venue and add it to db
-    artist = Artist(name=name, city=city, state=state, phone=phone, genres=genres,
-      facebook_link=facebook_link)
+    artist = Artist(name=name, city=city, state=state, phone=phone,
+                    genres=genres, facebook_link=facebook_link,
+                    website=website, image_link=image_link,
+                    seeking_venue=seeking_venue,
+                    seeking_description=seeking_description)
     db.session.add(artist)
     db.session.commit()
-
-    # set up body dic to return
-    body['name'] = artist.name
-    body['city'] = artist.city
-    body['state'] = artist.state
-    #body['address'] = artist.address
-    body['genres'] = artist.genres
-    body['facebook_link'] = artist.facebook_link
+    flash('Artist ' + request.form['name'] + ' was successfully listed!')
   except:
-    error = True
+    flash('An error occurred. Artist ' + request.form['name'] + ' could not be listed.')
     db.session.rollback()
-    print("ERROR")
     print(sys.exc_info())
   finally:
     db.session.close()
-  if error:
-    # on unsuccessful db insert, flash an error instead.
-    #flash('An error occurred. Artist ' + artist.name + ' could not be listed.')
-    #abort (400)
-    print("error when creating artist")
-  else:
-    # on successful db insert, flash success
-    #flash('Artist ' + request.form['name'] + ' was successfully listed!')
-    return render_template('pages/show_artist.html', artist=artist)
-
+  
+  return render_template('pages/home.html')
 
 #  Shows
 #  ----------------------------------------------------------------
