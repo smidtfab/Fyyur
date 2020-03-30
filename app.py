@@ -513,39 +513,27 @@ def create_show_submission():
   error = False
   body = {}
   try:
-    # get all attributes for artist from client request
-    venue_id = request.form['venue_id']
+    # input
     artist_id = request.form['artist_id']
+    venue_id = request.form['venue_id']
     start_time = request.form['start_time']
 
-    # get artist
-    artist = Artist.query.get(artist_id)
-    #venue = Venue.query.get(venue_id)
-    #artist.venues = [venue]
+    # create new show with user data
+    show = Show(artist_id=artist_id, venue_id=venue_id,
+                start_time=start_time)
 
-    statement = shows.insert().values(venue_id=venue_id, artist_id=artist_id, start_time=start_time)
-    db.session.execute(statement)
+    # add show and commit session
+    db.session.add(show)
     db.session.commit()
-    # create venue and add it to db
-    #db.session.add(artist)
-    #db.session.commit()
 
+    # on successful db insert, flash success
+    flash('Show was successfully listed!')
   except:
-    error = True
     db.session.rollback()
-    print("ERROR")
     print(sys.exc_info())
   finally:
     db.session.close()
-  if error:
-    # on unsuccessful db insert, flash an error instead.
-    #flash('An error occurred. Artist ' + artist.name + ' could not be listed.')
-    #abort (400)
-    print("error when creating artist")
-  else:
-    # on successful db insert, flash success
-    #flash('Artist ' + request.form['name'] + ' was successfully listed!')
-    return render_template('pages/show_artist.html', artist=artist)
+  return render_template('pages/home.html')
   
 @app.errorhandler(404)
 def not_found_error(error):
