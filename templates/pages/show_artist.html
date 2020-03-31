@@ -8,6 +8,8 @@
 		</h1>
 		<p class="subtitle">
 			ID: {{ artist.id }}
+			<button type="submit" onclick="onEditArtist(this)" data-id="{{ artist.id }}" class="btn-edit-artist"><i class="fas fa-edit"></i></button>
+			<button type="submit" onclick="onDeleteArtist(this)" data-id="{{ artist.id }}" class="btn-delete-artist"><i class="fas fa-trash"></i></button>
 		</p>
 		<div class="genres">
 			{% for genre in artist.genres %}
@@ -71,6 +73,35 @@
 		{% endfor %}
 	</div>
 </section>
+
+<script>
+	
+    function onEditArtist(e) {
+        const artistId = e.dataset['id'];
+        fetch(`/artists/${artistId}/edit`, {
+            method: 'GET'
+        })
+		.then(function () {
+			window.location.href = `/artists/${artistId}/edit`;
+		})
+		.catch(function (e) {
+			console.log('Error when uploading Artist --> ', e)
+		})
+    }
+
+	function onDeleteArtist(e) {
+        const artistId = e.dataset['id'];
+        fetch('/artists/' + artistId, {
+            method: 'DELETE'
+        })
+		.then(function () {
+			window.location.href = `/artists`;
+		})
+		.catch(function (e) {
+			console.log('Error when uploading Artist --> ', e)
+		})
+	}
+</script>	
 
 {% endblock %}
 
