@@ -8,8 +8,8 @@
 		</h1>
 		<p class="subtitle">
 			ID: {{ venue.id }}
-			<button type="submit" onclick="onEditVenue(this)" data-id="{{ venue.id }}" class="btn-delete-venue"><i class="fas fa-trash"></i></button>
-			<button type="submit" onclick="onDeleteVenue(this)" data-id="{{ venue.id }}" class="btn-edit-venue"><i class="fas fa-edit"></i></button>
+			<button type="submit" onclick="onEditVenue(this)" data-id="{{ venue.id }}" class="btn-edit-venue"><i class="fas fa-edit"></i></button>
+			<button type="submit" onclick="onDeleteVenue(this)" data-id="{{ venue.id }}" class="btn-delete-venue"><i class="fas fa-trash"></i></button>
 		</p>
 		<div class="genres">
 			{% for genre in venue.genres %}
@@ -77,6 +77,33 @@
 	</div>
 </section>
 
+<script>
+	
+    function onEditVenue(e) {
+        const venueId = e.dataset['id'];
+        fetch(`/venues/${venueId}/edit`, {
+            method: 'GET'
+        })
+		.then(function () {
+			window.location.href = `/venues/${venueId}/edit`;
+		})
+		.catch(function (e) {
+			console.log('Error when uploading Venue --> ', e)
+		})
+    }
+
+	function onDeleteVenue(e) {
+        const venueId = e.dataset['id'];
+        fetch('/venues/' + venueId, {
+            method: 'DELETE'
+        })
+		.then(function () {
+			window.location.href = `/venues`;
+		})
+		.catch(function (e) {
+			console.log('Error when uploading Venue --> ', e)
+		})
+	}
+</script>	
 
 {% endblock %}
-
