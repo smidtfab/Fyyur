@@ -8,6 +8,8 @@
 		</h1>
 		<p class="subtitle">
 			ID: {{ venue.id }}
+			<button type="submit" onclick="onEditVenue(this)" data-id="{{ venue.id }}" class="btn-delete-venue"><i class="fas fa-trash"></i></button>
+			<button type="submit" onclick="onDeleteVenue(this)" data-id="{{ venue.id }}" class="btn-edit-venue"><i class="fas fa-edit"></i></button>
 		</p>
 		<div class="genres">
 			{% for genre in venue.genres %}
@@ -74,6 +76,7 @@
 		{% endfor %}
 	</div>
 </section>
+
 
 {% endblock %}
 
